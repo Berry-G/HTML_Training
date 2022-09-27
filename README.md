@@ -1,1 +1,1 @@
-# HTML_Training
+# SQL_Training
