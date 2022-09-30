@@ -95,3 +95,122 @@ where a.length >=
           having avg(a.length) >= 115.27
           )
 order by a.length, a.title;
+
+select
+    avg(rental_rate)
+from film;
+
+-- RENTAL_RATE의 평균보다 큰 RENTAL_RATE 집합을 구하시오
+select
+    film_id
+,   title
+,   rental_rate
+from film
+where rental_rate > 2.98;
+
+-- 중첩 서브쿼리 => where 절에 쿼리 삽입
+select
+    film_id
+,   title
+,   rental_rate
+from film
+where rental_rate >
+      (
+          select
+              avg(rental_rate)
+          from film
+          );
+
+
+--인라인 뷰의 활용 => from 안에 쿼리
+select
+    a.film_id
+,   a.title
+,   a.rental_rate
+from film a
+,   (   select
+            avg(rental_rate) as AVG_RENTAL_RATE
+        from film
+    ) B
+where a.rental_rate > b.AVG_RENTAL_RATE;
+
+select
+    a.film_id
+,   a.title
+,   a.rental_rate
+from
+    (
+    select a.film_id
+    , a.title
+    , a.rental_rate
+    , (
+        select avg(rental_rate)
+        from film L
+        ) as AVG_RENTAL_RATE
+    from film a
+    ) A
+where a.rental_rate > A.AVG_RENTAL_RATE;
+
+--all연산자
+----서브쿼리에 의해 반환된 값과 비교함
+----서브쿼리의 모든 값이 만족을 해야만 조건이 성립
+----여러개의 레코드의 and 효과
+----가장 큰 값보다 큰
+select film_id
+     , title
+     , length
+from film
+where length > all
+      (select rating
+       from film
+       group by rating)
+order by length;
+
+--IN/EXISTS 연산자
+----서브쿼리 내에 집합이 존재하는지 존재 여부만 판단
+----결과값 중에 있는 것 중에서의 의미
+----in은 전체 레코드를 스캔함, EXISTS 존재여부만 확인하고 스캔하진 않음(속도가 빠름)
+----존재하는 TRUE
+----연산 부하가 줄어듦.
+select c.first_name
+     , c.last_name
+     , c.customer_id
+from customer c
+where not exists(
+        select 1
+        from payment p
+        where (p.customer_id = c.customer_id
+            and p.amount > 11)
+        order by c.first_name, c.last_name)
+;
+
+
+--재고가 없는 영화를 추출하시오
+select film_id, title
+from film
+except
+select distinct inventory.film_id
+, film.title
+from inventory
+inner join film
+on film.film_id = inventory.film_id
+order by title;
+
+--except 연산을 사용하지 않고 같은 결과 도출
+select film_id, title
+from film A
+where not exists(
+    select 1
+    from inventory B, film C
+    where B.film_id = C.film_id
+    and A.film_id = C.film_id
+    )
+order by title;
+
+DROP TABLE IF EXISTS ACCOUNT
+
+CREATE TABLE ACCOUNT
+(
+    USER_ID SERIAL PRIMARY KEY
+
+)
