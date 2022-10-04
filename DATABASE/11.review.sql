@@ -132,10 +132,81 @@ create table customer_rank as customer, payment
 
 
 --반납일자가 2005년 5월 29일인 렌탈 내역의 film_id를 조회하시오.
+select B.film_id
+from rental A
+inner join inventory B
+    on A.inventory_id = B.inventory_id
+where A.return_date between '2005-05-29 00:00:00.0000' and '2005-05-29 23:59:59.999';
+
 select *
 from rental
 join inventory i on i.inventory_id = rental.inventory_id
 where return_date > '2005-05-29' and return_date < '2005-05-30';
+
+--FILM 테이블에서 반납일자가 2005년 5월 29일인 렌탈 내역의 film_id를 조회하여 film 정보를 출력하시오
+--film_id, 타이틀
+select f.film_id,
+       f.title
+from film f
+inner join inventory i on f.film_id = i.film_id
+where f.film_id =
+      (
+        select 1
+        from rental A
+        inner join inventory B
+            on A.inventory_id = B.inventory_id
+        where A.return_date between '2005-05-29 00:00:00.0000' and '2005-05-29 23:59:59.999'
+    )
+;
+
+-- amount 가 9.00을 초과하고 payment_date 가 2007년 2월 15일부터
+-- 2007년 2월 19일 사이에 결제 내역이 존재하는 고객의 이름을 출력하시오
+-- 고객id, first_name, last_name
+select
+    c.customer_id
+,   c.first_name
+,   c.last_name
+from customer c
+inner join payment p on c.customer_id = p.customer_id
+where p.amount > 9.00 and p.payment_date between '2007-02-15' and '2007-02-19'
+order by c.customer_id asc;
+
+select
+    A.customer_id
+,   A.first_name
+,   A.last_name
+from customer A
+where exists
+    (
+        select 1
+        from payment X
+        where X.customer_id = A.customer_id
+        and X.amount > 9.00
+        and X.payment_date between '2007-02-15' and '2007-02-19'
+    );
+
+-- payment 테이블을 참조하여 amount 가 9.00을 초과하고 payment_date 가 2007년 2월 15일부터
+-- 2007년 2월 19일 사이에 결제 내역이 존재하는 고객의 이름을 출력하시오
+-- 고객 id, first_name, last_name
+select
+    A.customer_id
+,   a.first_name
+,   a.last_name
+,   b.amount
+,   b.payment_date
+from
+    (
+        select x.customer_id, x.amount, x.payment_date
+        from payment x
+        where x.amount > 9.00
+        and x.payment_date between '2007-02-15' and '2007-02-19'
+    ) b, customer a
+where a.customer_id = b.customer_id
+order by a.customer_id
+;
+
+
+
 --inventory id
 select * from inventory;
 --film id
