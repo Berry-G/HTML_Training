@@ -205,9 +205,89 @@ where a.customer_id = b.customer_id
 order by a.customer_id
 ;
 
+--연월
+select to_char(rental_date, 'YYYYMM') M
+,   count(*)
+from rental
+group by 1
+order by 1
+;
+
+--연월일 전체 ROLLUP
+select
+    to_char(rental_date, 'YYYY') Y
+,   to_char(rental_date, 'MM') M
+,   to_char(rental_date, 'DD') D
+,   count(*)
+from rental
+group by
+    rollup
+    (
+        to_char(rental_date, 'YYYY'), to_char(rental_date, 'MM'), to_char(rental_date, 'DD')
+    )
+order by 1
+;
 
 
 --inventory id
 select * from inventory;
 --film id
 select * from film;
+
+/**
+  RENTAL과 CUSTOMER 테이블을 이용하여
+  현재까지 가장 많이 RENTAL 한 고객ID, 렌탈순위, 누적렌탈횟수, 이름(FIRSTNAME,LASTNAME) 출력
+  -ROW_NUMBER()
+
+  1)RENTAL 순위를 구한다
+  2) 가장 많이 RENTAL한 1명의 고객만 구한다.
+  3) COUSTOMER 테이블과 조인해서 고객의 이름 등 출력한다.
+ */
+
+-- RENTAL 순위 구하기
+SELECT
+    R.customer_id
+,   row_number() over (order by count(R.rental_id) desc ) as RENTAL_RANK
+,   count(r.rental_id) RENTAL_COUNT
+FROM rental R
+group by R.customer_id;
+
+-- RENTAL 순위 1등만 뽑기
+SELECT
+    R.customer_id
+,   row_number() over (order by count(R.rental_id) desc ) as RENTAL_RANK
+,   count(r.rental_id) RENTAL_COUNT
+FROM rental R
+group by R.customer_id
+limit 1;
+
+--COUSTOMER 테이블과 조인해서 고객의 이름 등 출력한다.
+SELECT
+    R.customer_id
+,   row_number() over (order by count(R.rental_id) desc ) as RENTAL_RANK
+,   count(r.rental_id) RENTAL_COUNT
+,   max(c.first_name) as first_name
+,   max(c.last_name) as last_name
+FROM rental R, customer c
+where r.customer_id = c.customer_id
+group by R.customer_id
+limit 1;
+
+--COUSTOMER 테이블과 조인해서 고객의 이름 등 출력한다.
+select
+    a.customer_id
+,   a.RENTAL_RANK
+,   a.RENTAL_COUNT
+,   b.first_name
+,   b.last_name
+from
+    (
+    SELECT
+        R.customer_id
+    ,   row_number() over (order by count(R.rental_id) desc ) as RENTAL_RANK
+    ,   count(r.rental_id) RENTAL_COUNT
+    FROM rental R
+    group by R.customer_id
+    limit 1
+    ) A, customer B
+where a.customer_id = b.customer_id;
